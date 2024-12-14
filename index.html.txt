@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styel.css">
+  <title>Electron App</title>
+</head>
+<body>
+  <!-- Hidden button and header initially -->
+  <h1 id="title">Welcome to TikLocal App By @Void</h1>
+  <button id="select-videos" class="select-video-but">Select Video List</button>
+
+  <!-- Container for video list -->
+  <div id="video-list"></div>
+
+  <!-- Scroll buttons -->
+  <button id="scroll-up" class="scroll-button">↑</button>
+  <button id="scroll-down" class="scroll-button">↓</button>
+  <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" />
+
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const path = require('path');
+    const fs = require('fs');
+
+    let videos = [];
+    let currentVideoIndex = 0;
+
+    // Select videos button event listener
+    document.getElementById('select-videos').addEventListener('click', async () => {
+      // Hide the select video button and the title
+      document.getElementById('select-videos').style.display = 'none';
+      document.getElementById('title').style.display = 'none';
+
+      // Open the directory selection dialog
+      const selectedDirectory = await ipcRenderer.invoke('dialog:openDirectory');
+      
+      if (selectedDirectory.length > 0) {
+        videos = getMP4Files(selectedDirectory[0]);
+        displayVideo(currentVideoIndex);
+      } else {
+        alert('No directory selected!');
+      }
+    });
+
+    // Function to get all .mp4 files from the selected directory
+    function getMP4Files(directory) {
+      const files = fs.readdirSync(directory);
+      return files.filter(file => file.endsWith('.mp4')).map(file => path.join(directory, file));
+    }
+
+    // Function to display the video
+// Function to display the video
+function displayVideo(index) {
+  const videoListContainer = document.getElementById('video-list');
+  videoListContainer.innerHTML = ''; // Clear previous video
+
+  if (videos.length === 0) {
+    videoListContainer.innerHTML = '<p>No videos found in this folder.</p>';
+  } else {
+    const videoPath = videos[index];
+    const videoElement = document.createElement('video');
+    videoElement.src = 'file://' + videoPath;  // Add the 'file://' protocol to the video path for correct rendering
+    videoElement.controls = false; // Disable controls for a TikTok-style fullscreen experience
+    videoElement.autoplay = true;
+    videoElement.loop = true; // Loop the video
+    videoElement.classList.add('video');
+    
+    // Apply the saved volume if it exists
+    const savedVolume = localStorage.getItem('videoVolume');
+    if (savedVolume) {
+      videoElement.volume = savedVolume;
+      volumeSlider.value = savedVolume; // Sync slider with video volume
+    }
+
+    videoListContainer.appendChild(videoElement);
+  }
+}
+
+
+    // Scroll up button event listener
+    document.getElementById('scroll-up').addEventListener('click', () => {
+      if (currentVideoIndex > 0) {
+        currentVideoIndex--;
+        displayVideo(currentVideoIndex);
+      }
+    });
+
+    // Scroll down button event listener
+    document.getElementById('scroll-down').addEventListener('click', () => {
+      if (currentVideoIndex < videos.length - 1) {
+        currentVideoIndex++;
+        displayVideo(currentVideoIndex);
+      }
+    });
+
+    //VOLUME CHATGPT
+    // Volume slider event listener
+    const videoElement = document.createElement('video'); // Create video element once
+    const volumeSlider = document.getElementById('volume-slider');
+
+    // Load saved volume from localStorage (if any)
+    const savedVolume = localStorage.getItem('videoVolume');
+    if (savedVolume) {
+    videoElement.volume = savedVolume;
+    volumeSlider.value = savedVolume;
+    }
+
+    // Update video volume and save it to localStorage when the slider changes
+    volumeSlider.addEventListener('input', (event) => {
+    const volume = event.target.value;
+    videoElement.volume = volume;
+    localStorage.setItem('videoVolume', volume);
+    });
+
+
+
+
+
+
+
+
+
+
+  </script>
+</body>
+</html>
